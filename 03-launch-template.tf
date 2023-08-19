@@ -1,22 +1,20 @@
+ locals {
+      DB_IP      = aws_instance.db_server.private_ip
+ }
+
 resource "aws_launch_template" "template" {
-  name                  = "ec2-template"
-  image_id               = "ami-0507f77897697c4ba"
+  name                  = "group11-ec2-template"
+  image_id               = "ami-08a52ddb321b32a8c"
   instance_type          = "t2.micro"
-  vpc_security_group_ids = ["${aws_security_group.sg1.id}", "${aws_security_group.sg2.id}"]
+  vpc_security_group_ids = [module.websvr_sg.security_group.id]
   ebs_optimized          = false #t2.micro doesn;t support
   update_default_version = true
-  user_data              = filebase64("http.sh")
-  key_name               = "demo-key"
+  #user_data              = filebase64("http.sh")
+  user_data     = base64encode(templatefile("${path.module}/http.yaml", {
+    DB_IP = local.DB_IP
+  }))
+  key_name               = "group11-key"
 
-  # block_device_mappings {
-  #   device_name = "/dev/sda1"
-
-  #   ebs {
-  #     volume_size           = 12
-  #     delete_on_termination = true
-  #     volume_type           = "gp2"
-  #   }
-  # }
 
   monitoring {
     enabled = true
@@ -25,7 +23,7 @@ resource "aws_launch_template" "template" {
   tag_specifications {
     resource_type = "instance"
     tags = {
-      Name = "test"
+      Name = "group11-webserver"
     }
   }
 }
@@ -37,11 +35,11 @@ resource "tls_private_key" "example" {
 }
 
 resource "aws_key_pair" "centos" {
-  key_name   = "demo-key"
+  key_name   = "group11-key"
   public_key = "${tls_private_key.example.public_key_openssh}"
 }
 
 resource "local_file" "cloud_pem" { 
-  filename = "${path.module}/demo-key.pem"
+  filename = "${path.module}/group11-key.pem"
   content = tls_private_key.example.private_key_pem
 }

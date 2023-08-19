@@ -1,0 +1,32 @@
+#!/bin/bash
+
+sudo rpm -i https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm 
+sudo dnf repolist enabled | grep "mysql.*-community.*"
+sudo dnf install mysql-community-server -y
+systemctl start mysqld
+
+root_temp_pass=$(grep 'A temporary password' /var/log/mysqld.log |tail -1 |awk '{split($0,a,": "); print a[2]}')
+
+echo "root_temp_pass:"$root_temp_pass
+
+
+cat > mysql_secure_installation.sql << EOF
+
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'Runbabyrun@123';
+CREATE DATABASE group11;
+CREATE USER 'group11'@'%' IDENTIFIED BY 'Runbabyrun@12';
+GRANT ALL PRIVILEGES ON group11.* TO 'group11'@'%';
+FLUSH PRIVILEGES;
+
+DELETE FROM mysql.user WHERE User='';
+
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+
+FLUSH PRIVILEGES;
+EOF
+
+mysql -uroot -p"$root_temp_pass" --connect-expired-password <mysql_secure_installation.sql
+
+
+

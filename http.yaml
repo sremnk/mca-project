@@ -1,0 +1,39 @@
+#!/bin/bash
+
+sleep 60
+export DB_IP=${DB_IP}
+sudo yum install git  python-pip -y
+
+sudo dnf install -y mariadb105-devel gcc python3-devel 
+
+pip install mysqlclient
+
+git clone https://github.com/pkini2002/Social-media-web-app.git
+cd Social-media-web-app
+
+pip install virtualenv
+python3 -m venv venv
+source venv/bin/activate
+echo pymysql >> requirements.txt
+echo mysqlclient >> requirements.txt
+pip install -r requirements.txt
+
+cd socials
+
+
+sed -i "s/^.*ALLOWED_HOSTS.*/ALLOWED_HOSTS = ['*']/" socials/settings.py
+
+
+
+grep -rl '"ENGINE": "django.db.backends.sqlite3",' socials/settings.py | xargs sed -i 's/"ENGINE": "django.db.backends.sqlite3",/"ENGINE": "django.db.backends.mysql",/g'
+
+
+sed -i 's/"NAME": BASE_DIR \/ "db.sqlite3"/'"'NAME': 'group11',\n        'USER': 'group11',\n        'PASSWORD': 'Runbabyrun@12',\n        'HOST': '${DB_IP}',\n        'PORT': '3306'/"  socials/settings.py
+
+echo "CSRF_TRUSTED_ORIGINS = ['https://www.kumoc.com','https://kumoc.com']" >> socials/settings.py
+python manage.py makemigrations
+python manage.py migrate
+
+python3 manage.py runserver 0.0.0.0:8000 &
+
+
